@@ -109,7 +109,7 @@ def get_permissions(doctype: str | None = None, role: str | None = None):
 			d.is_submittable = meta.is_submittable
 			d.in_create = meta.in_create
 
-	return out
+	return sorted(out,key=lambda d: d.parent)
 
 
 @frappe.whitelist()
