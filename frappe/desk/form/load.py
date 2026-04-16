@@ -244,15 +244,28 @@ def get_comments(doctype: str, name: str, comment_type: str | list[str] = "Comme
 
 def _get_communications(doctype, name, start=0, limit=20):
 	communications = get_communication_data(doctype, name, start, limit)
-	for c in communications:
-		if c.communication_type in ("Communication", "Automated Message"):
-			c.attachments = json.dumps(
-				frappe.get_all(
-					"File",
-					fields=["file_url", "is_private"],
-					filters={"attached_to_doctype": "Communication", "attached_to_name": c.name},
+	if communications:
+		# Fetch communication data using the Frappe core function
+		comm_names = [c.name for c in communications]
+
+		# Filter the list based on the current user's read permission for each communication
+		# We use a list comprehension for better performance
+		allowed_names = set(frappe.get_list("Communication", 
+			filters={"name": ["in", comm_names]}, 
+			pluck="name"
+		))
+
+		# Filtere die ursprüngliche Liste
+		communications = [c for c in communications if c.name in allowed_names]
+		for c in communications:
+			if c.communication_type in ("Communication", "Automated Message"):
+				c.attachments = json.dumps(
+					frappe.get_all(
+						"File",
+						fields=["file_url", "is_private"],
+						filters={"attached_to_doctype": "Communication", "attached_to_name": c.name},
+					)
 				)
-			)
 
 	return communications
 
